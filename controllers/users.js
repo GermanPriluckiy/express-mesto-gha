@@ -83,7 +83,7 @@ const updateAvatar = (req, res) => {
     },
     { new: true },
   )
-    .then((user) => res.status(200).send({ message: 'Success update', user }))
+    .then((user) => res.status(200).send({ avatar: user.avatar }))
     .catch(() => res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' }));
 };
 module.exports = {
