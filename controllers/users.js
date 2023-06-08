@@ -57,30 +57,32 @@ const createUser = (req, res) => {
 };
 
 const updateUser = (req, res) => {
-  if (
-    req.body.name.length < 2
-    || req.body.name.length > 30
-    || req.body.about.length < 2
-    || req.body.about.length > 30
-  ) {
-    return res.status(ERROR_CODE).send({ message: 'Введены некорректные данные' });
-  }
-  return User.findByIdAndUpdate(
+  User.findByIdAndUpdate(
     req.user._id,
     {
       name: req.body.name,
       about: req.body.about,
     },
-    { new: true },
+    { new: true, runValidators: true },
   )
     .then((user) => res.status(200).send({ user }))
-    .catch(() => res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' }));
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        res.status(ERROR_CODE).send({ message: 'Введены некорректные данные' });
+      } else {
+        res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' });
+      }
+    });
 };
 
 const updateAvatar = (req, res) => {
-  User.findByIdAndUpdate(req.user._id, {
-    avatar: req.body.avatar,
-  })
+  User.findByIdAndUpdate(
+    req.user._id,
+    {
+      avatar: req.body.avatar,
+    },
+    { new: true },
+  )
     .then((user) => res.status(200).send({ message: 'Success update', user }))
     .catch(() => res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' }));
 };

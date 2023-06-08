@@ -1,8 +1,19 @@
+const { ObjectId } = require('mongoose').Types;
 const Card = require('../models/card');
 
 const ERROR_CODE = 400;
 const NOT_FOUND_ERROR_CODE = 404;
 const DEFAULT_ERROR_CODE = 500;
+
+function isValidObjectId(id) {
+  if (ObjectId.isValid(id)) {
+    if (String(new ObjectId(id)) === id) {
+      return true;
+    }
+    return false;
+  }
+  return false;
+}
 
 const getCards = (req, res) => {
   Card.find({})
@@ -26,52 +37,81 @@ const createCard = (req, res) => {
 };
 
 const deleteCard = (req, res) => {
-  Card.findByIdAndDelete({ _id: req.params.cardId })
-    .then((card) => res.status(200).send(card))
-    .catch((err) => res.status(400).send(err));
-//   if (!Card.findById(req.params.cardId)) {
-//     return res.status(404).send({ message: 'Карточка не найдена' });
-//   }
-//   return Card.deleteOne({ _id: req.params.cardId })
-//     .then((card) => res.status(200).send(card))
-//     .catch((err) => res.status(400).send(err));
+  if (isValidObjectId(req.params.cardId)) {
+    return Card.findByIdAndDelete({ _id: req.params.cardId })
+      .orFail(() => new Error('Not found'))
+      .then((card) => res.status(200).send(card))
+      .catch((err) => {
+        if (err.message === 'Not found') {
+          res
+            .status(NOT_FOUND_ERROR_CODE)
+            .send({ message: 'Карточка не найдена' });
+        } else {
+          res
+            .status(DEFAULT_ERROR_CODE)
+            .send({ message: 'Что-то пошло не так' });
+        }
+      });
+  }
+
+  return res
+    .status(ERROR_CODE)
+    .send({ message: 'Введены некорректные данные' });
 };
 
-const likeCard = (req, res) => Card.findByIdAndUpdate(
-  req.params.cardId,
-  { $addToSet: { likes: req.user._id } }, // добавить _id в массив, если его там нет
-  { new: true },
-)
-  .then((card) => res.status(200).send(card))
-  .catch((err) => {
-    if (err.name === 'CastError') {
-      res
-        .status(NOT_FOUND_ERROR_CODE)
-        .send({ message: 'Введены некорректные данные' });
-    } else {
-      res
-        .status(DEFAULT_ERROR_CODE)
-        .send({ message: 'Что-то пошло не так' });
-    }
-  });
+const likeCard = (req, res) => {
+  if (isValidObjectId(req.params.cardId)) {
+    return Card.findByIdAndUpdate(
+      req.params.cardId,
+      { $addToSet: { likes: req.user._id } },
+      { new: true },
+    )
+      .orFail(() => new Error('Not found'))
+      .then((card) => res.status(200).send({ data: card.likes }))
+      .catch((err) => {
+        if (err.message === 'Not found') {
+          res
+            .status(NOT_FOUND_ERROR_CODE)
+            .send({ message: 'Карточка не найдена' });
+        } else {
+          res
+            .status(DEFAULT_ERROR_CODE)
+            .send({ message: 'Что-то пошло не так' });
+        }
+      });
+  }
 
-const dislikeCard = (req, res) => Card.findByIdAndUpdate(
-  req.params.cardId,
-  { $pull: { likes: req.user._id } }, // убрать _id из массива
-  { new: true },
-)
-  .then((card) => res.status(200).send(card))
-  .catch((err) => {
-    if (err.name === 'CastError') {
-      res
-        .status(NOT_FOUND_ERROR_CODE)
-        .send({ message: 'Введены некорректные данные' });
-    } else {
-      res
-        .status(DEFAULT_ERROR_CODE)
-        .send({ message: 'Что-то пошло не так' });
-    }
-  });
+  return res
+    .status(ERROR_CODE)
+    .send({ message: 'Введены некорректные данные' });
+};
+
+const dislikeCard = (req, res) => {
+  if (isValidObjectId(req.params.cardId)) {
+    return Card.findByIdAndUpdate(
+      req.params.cardId,
+      { $pull: { likes: req.user._id } }, // убрать _id из массива
+      { new: true },
+    )
+      .orFail(() => new Error('Not found'))
+      .then((card) => res.status(200).send({ data: card.likes }))
+      .catch((err) => {
+        if (err.message === 'Not found') {
+          res
+            .status(NOT_FOUND_ERROR_CODE)
+            .send({ message: 'Карточка не найдена' });
+        } else {
+          res
+            .status(DEFAULT_ERROR_CODE)
+            .send({ message: 'Что-то пошло не так' });
+        }
+      });
+  }
+
+  return res
+    .status(ERROR_CODE)
+    .send({ message: 'Введены некорректные данные' });
+};
 
 module.exports = {
   getCards,
