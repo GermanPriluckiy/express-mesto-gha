@@ -31,16 +31,37 @@ const getUserById = (req, res) => {
       });
   }
 
-  return res.status(500).send({ message: 'Invalid id type' });
+  return res.status(400).send({ message: 'Invalid id type' });
 };
 const createUser = (req, res) => {
   User.create(req.body)
     .then((user) => res.status(201).send(user))
-    .catch((err) => res.status(500).send({ message: 'Critical error', err: err.message }));
+    .catch((err) => res.status(400).send({ message: err.message }));
 };
 
+const updateUser = (req, res) => {
+  if ((req.body.name.length < 2) || (req.body.about.length < 2)) {
+    return res.status(400).send({ message: 'Invalid value' });
+  }
+  return User.findByIdAndUpdate(req.user._id, {
+    name: req.body.name,
+    about: req.body.about,
+  })
+    .then((user) => res.status(200).send({ message: 'Success update', user }))
+    .catch((err) => res.status(400).send({ message: err.message }));
+};
+
+const updateAvatar = (req, res) => {
+  User.findByIdAndUpdate(req.user._id, {
+    avatar: req.body.avatar,
+  })
+    .then((user) => res.status(200).send({ message: 'Success update', user }))
+    .catch((err) => res.status(400).send({ message: err.message }));
+};
 module.exports = {
   getUsers,
   createUser,
   getUserById,
+  updateUser,
+  updateAvatar,
 };
