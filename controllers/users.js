@@ -1,6 +1,10 @@
 const { ObjectId } = require('mongoose').Types;
 const User = require('../models/user');
 
+const ERROR_CODE = 400;
+const NOT_FOUND_ERROR_CODE = 404;
+const DEFAULT_ERROR_CODE = 500;
+
 function isValidObjectId(id) {
   if (ObjectId.isValid(id)) {
     if (String(new ObjectId(id)) === id) {
@@ -13,8 +17,8 @@ function isValidObjectId(id) {
 
 const getUsers = (req, res) => {
   User.find({})
-    .then((users) => res.status(200).send(users))
-    .catch((err) => res.status(500).send({ message: 'Critical error', err: err.message }));
+    .then((users) => res.status(200).send({ data: users }))
+    .catch(() => res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' }));
 };
 
 const getUserById = (req, res) => {
@@ -24,31 +28,53 @@ const getUserById = (req, res) => {
       .then((user) => res.status(200).send(user))
       .catch((err) => {
         if (err.message === 'Not found') {
-          res.status(404).send({ message: 'User not found' });
+          res
+            .status(NOT_FOUND_ERROR_CODE)
+            .send({ message: 'Пользователь не найден' });
         } else {
-          res.status(500).send({ message: 'Critical error', err: err.message });
+          res
+            .status(DEFAULT_ERROR_CODE)
+            .send({ message: 'Что-то пошло не так' });
         }
       });
   }
 
-  return res.status(400).send({ message: 'Invalid id type' });
+  return res
+    .status(ERROR_CODE)
+    .send({ message: 'Введены некорректные данные' });
 };
 const createUser = (req, res) => {
   User.create(req.body)
+
     .then((user) => res.status(201).send(user))
-    .catch((err) => res.status(400).send({ message: err.message }));
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        res.status(ERROR_CODE).send({ message: 'Введены некорректные данные' });
+      } else {
+        res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' });
+      }
+    });
 };
 
 const updateUser = (req, res) => {
-  if ((req.body.name.length < 2) || (req.body.about.length < 2)) {
-    return res.status(400).send({ message: 'Invalid value' });
+  if (
+    req.body.name.length < 2
+    || req.body.name.length > 30
+    || req.body.about.length < 2
+    || req.body.about.length > 30
+  ) {
+    return res.status(ERROR_CODE).send({ message: 'Введены некорректные данные' });
   }
-  return User.findByIdAndUpdate(req.user._id, {
-    name: req.body.name,
-    about: req.body.about,
-  })
-    .then((user) => res.status(200).send({ message: 'Success update', user }))
-    .catch((err) => res.status(400).send({ message: err.message }));
+  return User.findByIdAndUpdate(
+    req.user._id,
+    {
+      name: req.body.name,
+      about: req.body.about,
+    },
+    { new: true },
+  )
+    .then((user) => res.status(200).send({ user }))
+    .catch(() => res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' }));
 };
 
 const updateAvatar = (req, res) => {
@@ -56,7 +82,7 @@ const updateAvatar = (req, res) => {
     avatar: req.body.avatar,
   })
     .then((user) => res.status(200).send({ message: 'Success update', user }))
-    .catch((err) => res.status(400).send({ message: err.message }));
+    .catch(() => res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' }));
 };
 module.exports = {
   getUsers,

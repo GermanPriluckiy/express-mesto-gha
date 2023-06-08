@@ -1,9 +1,13 @@
 const Card = require('../models/card');
 
+const ERROR_CODE = 400;
+const NOT_FOUND_ERROR_CODE = 404;
+const DEFAULT_ERROR_CODE = 500;
+
 const getCards = (req, res) => {
   Card.find({})
     .then((cards) => res.status(200).send(cards))
-    .catch((err) => res.status(400).send({ message: 'Critical error', err: err.message }));
+    .catch(() => res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' }));
 };
 
 const createCard = (req, res) => {
@@ -12,16 +16,25 @@ const createCard = (req, res) => {
     ...req.body,
   })
     .then((card) => res.status(201).send(card))
-    .catch((err) => res.status(400).send({ message: 'Critical error', err: err.message }));
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        res.status(ERROR_CODE).send({ message: 'Введены некорректные данные' });
+      } else {
+        res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' });
+      }
+    });
 };
 
 const deleteCard = (req, res) => {
-  if (!req.params.cardId) {
-    return res.status(404).send({ message: 'Card not found' });
-  }
-  return Card.deleteOne({ _id: req.params.cardId })
+  Card.findByIdAndDelete({ _id: req.params.cardId })
     .then((card) => res.status(200).send(card))
-    .catch((err) => res.status(400).send({ message: 'Invalid id type', err: err.message }));
+    .catch((err) => res.status(400).send(err));
+//   if (!Card.findById(req.params.cardId)) {
+//     return res.status(404).send({ message: 'Карточка не найдена' });
+//   }
+//   return Card.deleteOne({ _id: req.params.cardId })
+//     .then((card) => res.status(200).send(card))
+//     .catch((err) => res.status(400).send(err));
 };
 
 const likeCard = (req, res) => Card.findByIdAndUpdate(
@@ -30,7 +43,17 @@ const likeCard = (req, res) => Card.findByIdAndUpdate(
   { new: true },
 )
   .then((card) => res.status(200).send(card))
-  .catch((err) => res.status(400).send({ message: 'Critical error', err: err.message }));
+  .catch((err) => {
+    if (err.name === 'CastError') {
+      res
+        .status(NOT_FOUND_ERROR_CODE)
+        .send({ message: 'Введены некорректные данные' });
+    } else {
+      res
+        .status(DEFAULT_ERROR_CODE)
+        .send({ message: 'Что-то пошло не так' });
+    }
+  });
 
 const dislikeCard = (req, res) => Card.findByIdAndUpdate(
   req.params.cardId,
@@ -38,7 +61,18 @@ const dislikeCard = (req, res) => Card.findByIdAndUpdate(
   { new: true },
 )
   .then((card) => res.status(200).send(card))
-  .catch((err) => res.status(400).send({ message: 'Critical error', err: err.message }));
+  .catch((err) => {
+    if (err.name === 'CastError') {
+      res
+        .status(NOT_FOUND_ERROR_CODE)
+        .send({ message: 'Введены некорректные данные' });
+    } else {
+      res
+        .status(DEFAULT_ERROR_CODE)
+        .send({ message: 'Что-то пошло не так' });
+    }
+  });
+
 module.exports = {
   getCards,
   createCard,

@@ -9,7 +9,7 @@
     "dev": "nodemon app.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "German Priluckiy",
   "license": "ISC",
   "devDependencies": {
     "eslint": "^8.42.0",
