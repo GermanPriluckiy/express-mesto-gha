@@ -18,7 +18,7 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-app.use('/*', (req, res) => res.status(404).send({ message: 'Путь не найден' }));
+// app.use('/*', (req, res) => res.status(404).send({ message: 'Путь не найден' }));
 
 app.use(router);
 
