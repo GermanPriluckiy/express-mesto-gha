@@ -1,9 +1,10 @@
 const { ObjectId } = require('mongoose').Types;
 const Card = require('../models/card');
-
-const ERROR_CODE = 400;
-const NOT_FOUND_ERROR_CODE = 404;
-const DEFAULT_ERROR_CODE = 500;
+const {
+  ERROR_CODE,
+  NOT_FOUND_ERROR_CODE,
+  DEFAULT_ERROR_CODE,
+} = require('../utils/utils');
 
 function isValidObjectId(id) {
   if (ObjectId.isValid(id)) {
@@ -17,14 +18,15 @@ function isValidObjectId(id) {
 
 const getCards = (req, res) => {
   Card.find({})
-    .then((cards) => res.status(200).send(cards))
+    .then((cards) => res.send(cards))
     .catch(() => res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' }));
 };
 
 const createCard = (req, res) => {
   Card.create({
     owner: req.user._id,
-    ...req.body,
+    name: req.body.name,
+    link: req.body.link,
   })
     .then((card) => res.status(201).send(card))
     .catch((err) => {
@@ -36,28 +38,20 @@ const createCard = (req, res) => {
     });
 };
 
-const deleteCard = (req, res) => {
-  if (isValidObjectId(req.params.cardId)) {
-    return Card.findByIdAndDelete({ _id: req.params.cardId })
-      .orFail(() => new Error('Not found'))
-      .then((card) => res.status(200).send(card))
-      .catch((err) => {
-        if (err.message === 'Not found') {
-          res
-            .status(NOT_FOUND_ERROR_CODE)
-            .send({ message: 'Карточка не найдена' });
-        } else {
-          res
-            .status(DEFAULT_ERROR_CODE)
-            .send({ message: 'Что-то пошло не так' });
-        }
-      });
-  }
-
-  return res
-    .status(ERROR_CODE)
-    .send({ message: 'Введены некорректные данные' });
-};
+const deleteCard = (req, res) => Card.findByIdAndDelete({ _id: req.params.cardId })
+  .orFail(() => new Error('Not found'))
+  .then((card) => res.send(card))
+  .catch((err) => {
+    if (err.message === 'Not found') {
+      res
+        .status(NOT_FOUND_ERROR_CODE)
+        .send({ message: 'Карточка не найдена' });
+    } else if (err.name === 'CastError') {
+      res.status(ERROR_CODE).send({ message: 'Введены некорректные данные' });
+    } else {
+      res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' });
+    }
+  });
 
 const likeCard = (req, res) => {
   if (isValidObjectId(req.params.cardId)) {
@@ -67,7 +61,7 @@ const likeCard = (req, res) => {
       { new: true },
     )
       .orFail(() => new Error('Not found'))
-      .then((card) => res.status(200).send({ data: card.likes }))
+      .then((card) => res.send({ data: card.likes }))
       .catch((err) => {
         if (err.message === 'Not found') {
           res
@@ -94,7 +88,7 @@ const dislikeCard = (req, res) => {
       { new: true },
     )
       .orFail(() => new Error('Not found'))
-      .then((card) => res.status(200).send({ data: card.likes }))
+      .then((card) => res.send({ data: card.likes }))
       .catch((err) => {
         if (err.message === 'Not found') {
           res
