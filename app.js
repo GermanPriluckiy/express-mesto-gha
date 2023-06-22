@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = require('./routes');
+const { createUser, login } = require('./controllers/users');
 
 const app = express();
 
@@ -18,6 +19,8 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
+router.post('/signup', createUser);
+router.post('/signin', login);
 app.use(router);
 app.use((req, res) => {
   res.status(404).send({ message: 'Путь не найден' });

@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 
 const {
@@ -21,52 +22,49 @@ const getUserById = (req, res) => User.findById(req.params.userId)
         .status(NOT_FOUND_ERROR_CODE)
         .send({ message: 'Пользователь не найден' });
     } else if (err.name === 'CastError') {
-      res
-        .status(ERROR_CODE)
-        .send({ message: 'Введены некорректные данные' });
+      res.status(ERROR_CODE).send({ message: 'Введены некорректные данные' });
     } else {
       res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' });
     }
   });
 
-// const getUserById = (req, res) => {
-//   if (isValidObjectId(req.params.userId)) {
-//     return User.findById(req.params.userId)
-//       .orFail(() => new Error('Not found'))
-//       .then((user) => res.send(user))
-//       .catch((err) => {
-//         if (err.message === 'Not found') {
-//           res
-//             .status(NOT_FOUND_ERROR_CODE)
-//             .send({ message: 'Пользователь не найден' });
-//         } else {
-//           res
-//             .status(DEFAULT_ERROR_CODE)
-//             .send({ message: 'Что-то пошло не так' });
-//         }
-//       });
-//   }
-
-//   return res
-//     .status(ERROR_CODE)
-//     .send({ message: 'Введены некорректные данные' });
-// };
-
 const createUser = (req, res) => {
-  User.create({
-    name: req.body.name,
-    about: req.body.about,
-    avatar: req.body.avatar,
-  })
+  bcrypt.hash(String(req.body.password), 10).then((hashedPass) => {
+    User.create({
+      ...req.body,
+      password: hashedPass,
+    })
+      .then((user) => res.status(201).send(user))
+      .catch((err) => {
+        if (err.name === 'ValidationError') {
+          res
+            .status(ERROR_CODE)
+            .send({ message: 'Введены некорректные данные' });
+        } else {
+          res
+            .status(DEFAULT_ERROR_CODE)
+            .send({ message: 'Что-то пошло не так' });
+        }
+      });
+  });
+};
 
-    .then((user) => res.status(201).send(user))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(ERROR_CODE).send({ message: 'Введены некорректные данные' });
-      } else {
-        res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' });
-      }
-    });
+const login = (req, res) => {
+  const { email, password } = req.body;
+
+  User.findOne({ email })
+    .select('+password')
+    .orFail(() => new Error('Пользователь не найден'))
+    .then((user) => {
+      bcrypt.compare(String(password), user.password).then((isValidUser) => {
+        if (isValidUser) {
+          res.send({ data: user.toJSON() });
+        } else {
+          res.status(403).send({ message: 'Что-то случилось' });
+        }
+      });
+    })
+    .catch((err) => res.status(500).send({ message: err.message }));
 };
 
 const updateUser = (req, res) => {
@@ -105,4 +103,5 @@ module.exports = {
   getUserById,
   updateUser,
   updateAvatar,
+  login,
 };
