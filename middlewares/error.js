@@ -1,30 +1,25 @@
-// class UserNotFound extends Error {
-//   constructor(err) {
-//     super(err);
-//     this.message = "Пользователь не найден";
-//     this.statusCode = 404;
-//   }
-// }
+const IncorrectDataError = require('../errors/IncorrectDataError');
+const DefaultError = require('../errors/DefaultError');
+const UnauthorizedError = require('../errors/UnauthorizedError');
 
-// class AbstractError extends Error {
-//   constructor(err) {
-//     super(err);
-//     this.message = err.body;
-//     this.statusCode = err.statusCode;
-//   }
-// }
+const errorHandler = (err, req, res, next) => {
+  let error;
 
-// const errorHandler = (err, req, res, next) => {
-//   let error;
-//   if (err.statusCode === 404) {
-//     error = new UserNotFound(err);
-//   } else {
-//     error = new AbstractError(err);
-//   }
+  switch (err.name) {
+    case 'CastError':
+      error = new IncorrectDataError('Неверные данные');
+      break;
+    case 'Error':
+      error = err;
+      break;
+    case 'JsonWebTokenError':
+      error = new UnauthorizedError('Нужно пройти авторизацию');
+      break;
+    default:
+      error = new DefaultError('Что-то пошло не так');
+  }
+  res.status(error.statusCode).send({ message: error.message });
+  next();
+};
 
-//   res.status(err.statusCode).send({ message: error.message });
-//   next();
-
-// };
-
-// module.exports = errorHandler;
+module.exports = errorHandler;

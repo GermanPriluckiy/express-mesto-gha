@@ -1,10 +1,10 @@
 const bcrypt = require('bcryptjs');
 const jsonWebToken = require('jsonwebtoken');
 const User = require('../models/user');
+const NotFoundError = require('../errors/NotFoundError');
 
 const {
   ERROR_CODE,
-  NOT_FOUND_ERROR_CODE,
   DEFAULT_ERROR_CODE,
 } = require('../utils/utils');
 
@@ -14,20 +14,25 @@ const getUsers = (req, res) => {
     .catch(() => res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' }));
 };
 
-const getUserById = (req, res) => User.findById(req.params.userId)
-  .orFail(() => new Error('Not found'))
+const getUserById = (req, res, next) => User.findById(req.params.userId)
+  .orFail(() => { throw new NotFoundError('Нет пользователя с таким id'); })
   .then((user) => res.send(user))
-  .catch((err) => {
-    if (err.message === 'Not found') {
-      res
-        .status(NOT_FOUND_ERROR_CODE)
-        .send({ message: 'Пользователь не найден' });
-    } else if (err.name === 'CastError') {
-      res.status(ERROR_CODE).send({ message: 'Введены некорректные данные' });
-    } else {
-      res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' });
-    }
-  });
+  .catch(next);
+
+// const getUserById = (req, res, next) => User.findById(req.params.userId)
+//   .orFail(() => new Error('Not found'))
+//   .then((user) => res.send(user))
+//   .catch((err) => {
+//     if (err.message === 'Not found') {
+//       res
+//         .status(NOT_FOUND_ERROR_CODE)
+//         .send({ message: 'Пользователь не найден' });
+//     } else if (err.name === 'CastError') {
+//       res.status(ERROR_CODE).send({ message: 'Введены некорректные данные' });
+//     } else {
+//       res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' });
+//     }
+//   });
 
 const createUser = (req, res) => {
   bcrypt.hash(String(req.body.password), 10).then((hashedPass) => {
