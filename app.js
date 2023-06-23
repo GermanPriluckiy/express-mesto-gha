@@ -19,7 +19,7 @@ app.use((req, res) => {
   res.status(404).send({ message: 'Путь не найден' });
 });
 
-app.use(errorHandler);
+//app.use(errorHandler);
 
 app.listen(3000, () => {
   // eslint-disable-next-line no-console
