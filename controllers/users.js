@@ -15,7 +15,9 @@ const getUserById = (req, res, next) => User.findById(req.params.userId)
   .orFail(() => {
     throw new NotFoundError('Нет пользователя с таким id');
   })
-  .then((user) => res.send(user))
+  .then((user) => {
+    res.send(user);
+  })
   .catch(next);
 
 const getCurrentUser = (req, res, next) => User.findById(req.user._id)
@@ -24,21 +26,6 @@ const getCurrentUser = (req, res, next) => User.findById(req.user._id)
   })
   .then((user) => res.send(user))
   .catch(next);
-
-// const getUserById = (req, res, next) => User.findById(req.params.userId)
-//   .orFail(() => new Error('Not found'))
-//   .then((user) => res.send(user))
-//   .catch((err) => {
-//     if (err.message === 'Not found') {
-//       res
-//         .status(NOT_FOUND_ERROR_CODE)
-//         .send({ message: 'Пользователь не найден' });
-//     } else if (err.name === 'CastError') {
-//       res.status(ERROR_CODE).send({ message: 'Введены некорректные данные' });
-//     } else {
-//       res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' });
-//     }
-//   });
 
 const createUser = (req, res, next) => {
   User.findOne({ email: req.body.email })
@@ -58,27 +45,6 @@ const createUser = (req, res, next) => {
     })
     .catch(next);
 };
-
-// const createUser = (req, res) => {
-//   bcrypt.hash(String(req.body.password), 10).then((hashedPass) => {
-//     User.create({
-//       ...req.body,
-//       password: hashedPass,
-//     })
-//       .then((user) => res.status(201).send(user))
-//       .catch((err) => {
-//         if (err.name === 'ValidationError') {
-//           res
-//             .status(ERROR_CODE)
-//             .send({ message: 'Введены некорректные данные' });
-//         } else {
-//           res
-//             .status(DEFAULT_ERROR_CODE)
-//             .send({ message: 'Что-то пошло не так' });
-//         }
-//       });
-//   });
-// };
 
 const login = (req, res, next) => {
   const { email, password } = req.body;
@@ -126,25 +92,6 @@ const updateUser = (req, res, next) => {
     .then((user) => res.send({ user }))
     .catch(next);
 };
-
-// const updateUser = (req, res) => {
-//   User.findByIdAndUpdate(
-//     req.user._id,
-//     {
-//       name: req.body.name,
-//       about: req.body.about,
-//     },
-//     { new: true, runValidators: true },
-//   )
-//     .then((user) => res.send({ user }))
-//     .catch((err) => {
-//       if (err.name === 'ValidationError') {
-//         res.status(ERROR_CODE).send({ message: 'Введены некорректные данные' });
-//       } else {
-//         res.status(DEFAULT_ERROR_CODE).send({ message: 'Что-то пошло не так' });
-//       }
-//     });
-// };
 
 const updateAvatar = (req, res, next) => {
   User.findByIdAndUpdate(

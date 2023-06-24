@@ -15,6 +15,9 @@ const errorHandler = (err, req, res, next) => {
     case 'JsonWebTokenError':
       error = new UnauthorizedError('Нужно пройти авторизацию');
       break;
+    case 'Bad Request':
+      error = new IncorrectDataError('Неверные данные');
+      break;
     default:
       error = new DefaultError('Что-то пошло не так');
   }
