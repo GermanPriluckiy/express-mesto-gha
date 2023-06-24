@@ -1,5 +1,6 @@
 const NotFoundError = require('../errors/NotFoundError');
 const NotOwnerError = require('../errors/NotOwnerError');
+const IncorrectDataError = require('../errors/IncorrectDataError');
 const Card = require('../models/card');
 
 const getCards = (req, res, next) => {
@@ -15,7 +16,13 @@ const createCard = (req, res, next) => {
     link: req.body.link,
   })
     .then((card) => res.status(201).send(card))
-    .catch(next);
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new IncorrectDataError('некорректные данные при создании карточки'));
+      } else {
+        next(err);
+      }
+    });
 };
 
 const deleteCard = (req, res, next) => {

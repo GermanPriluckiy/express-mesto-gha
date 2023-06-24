@@ -4,6 +4,7 @@ const User = require('../models/user');
 const NotFoundError = require('../errors/NotFoundError');
 const UnauthorizedError = require('../errors/UnauthorizedError');
 const AlreadyUseError = require('../errors/AlreadyUseError');
+const IncorrectDataError = require('../errors/IncorrectDataError');
 
 const getUsers = (req, res, next) => {
   User.find({})
@@ -28,22 +29,29 @@ const getCurrentUser = (req, res, next) => User.findById(req.user._id)
   .catch(next);
 
 const createUser = (req, res, next) => {
-  User.findOne({ email: req.body.email })
-    .then((user) => {
-      if (user === null) {
-        bcrypt.hash(String(req.body.password), 10).then((hashedPass) => {
-          User.create({
-            ...req.body,
-            password: hashedPass,
-          })
-            .then((newUser) => res.status(201).send(newUser))
-            .catch(next);
-        });
-      } else {
-        throw new AlreadyUseError('Пользователь с такой почтой уже существует');
-      }
+  bcrypt.hash(String(req.body.password), 10).then((hashedPass) => {
+    User.create({
+      ...req.body,
+      password: hashedPass,
     })
-    .catch(next);
+      .then((newUser) => res.status(201).send(newUser))
+      .catch((err) => {
+        if (err.code === 11000) {
+          next(
+            new AlreadyUseError('Пользователь с такой почтой уже существует'),
+          );
+          return;
+        }
+        if (err.name === 'ValidationError') {
+          next(
+            new IncorrectDataError('Неверные данные при создании пользователя'),
+          );
+          return;
+        }
+        next(err);
+      })
+      .catch(next);
+  });
 };
 
 const login = (req, res, next) => {
@@ -90,7 +98,17 @@ const updateUser = (req, res, next) => {
     { new: true, runValidators: true },
   )
     .then((user) => res.send({ user }))
-    .catch(next);
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(
+          new IncorrectDataError(
+            'Некорректные данные при обновлении информации',
+          ),
+        );
+      } else {
+        next(err);
+      }
+    });
 };
 
 const updateAvatar = (req, res, next) => {
@@ -102,7 +120,17 @@ const updateAvatar = (req, res, next) => {
     { new: true },
   )
     .then((user) => res.send({ avatar: user.avatar }))
-    .catch(next);
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(
+          new IncorrectDataError(
+            'Некорректные данные при обновлении аватара',
+          ),
+        );
+      } else {
+        next(err);
+      }
+    });
 };
 module.exports = {
   getUsers,
