@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jsonWebToken = require('jsonwebtoken');
 const User = require('../models/user');
 const NotFoundError = require('../errors/NotFoundError');
+const UnauthorizedError = require('../errors/UnauthorizedError');
 const AlreadyUseError = require('../errors/AlreadyUseError');
 
 const getUsers = (req, res, next) => {
@@ -79,33 +80,38 @@ const createUser = (req, res, next) => {
 //   });
 // };
 
-const login = (req, res) => {
+const login = (req, res, next) => {
   const { email, password } = req.body;
 
   User.findOne({ email })
     .select('+password')
-    .orFail(() => new Error('Пользователь не найден'))
-    .then((user) => {
-      bcrypt.compare(String(password), user.password).then((isValidUser) => {
-        if (isValidUser) {
-          const jwt = jsonWebToken.sign(
-            {
-              _id: user._id,
-            },
-            'SECRET',
-          );
-          res.cookie('jwt', jwt, {
-            maxAge: 360000,
-            httpOnly: true,
-            sameSite: true,
-          });
-          res.send({ data: user.toJSON() });
-        } else {
-          res.status(403).send({ message: 'Что-то случилось' });
-        }
-      });
+    .orFail(() => {
+      throw new UnauthorizedError('Неверная почта или пароль');
     })
-    .catch((err) => res.status(500).send({ message: err.message }));
+    .then((user) => {
+      bcrypt
+        .compare(String(password), user.password)
+        .then((isValidUser) => {
+          if (isValidUser) {
+            const jwt = jsonWebToken.sign(
+              {
+                _id: user._id,
+              },
+              'SECRET',
+            );
+            res.cookie('jwt', jwt, {
+              maxAge: 360000,
+              httpOnly: true,
+              sameSite: true,
+            });
+            res.send({ data: user.toJSON() });
+          } else {
+            throw new UnauthorizedError('Неверная почта или пароль');
+          }
+        })
+        .catch(next);
+    })
+    .catch(next);
 };
 
 const updateUser = (req, res, next) => {

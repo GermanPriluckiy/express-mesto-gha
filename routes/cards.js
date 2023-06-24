@@ -14,8 +14,8 @@ router.post(
   '/',
   celebrate({
     body: Joi.object().keys({
-      name: Joi.string().min(2).max(30),
-      link: Joi.string().regex(
+      name: Joi.string().required().min(2).max(30),
+      link: Joi.string().required().regex(
         /^((ftp|http|https):\/\/)?(www\.)?([A-Za-zА-Яа-я0-9]{1}[A-Za-zА-Яа-я0-9\-]*\.?)*\.{1}[A-Za-zА-Яа-я0-9-]{2,8}(\/([\w#!:.?+=&%@!\-\/])*)?/,
       ),
     }),
