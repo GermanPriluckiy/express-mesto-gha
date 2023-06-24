@@ -1,5 +1,6 @@
+/* eslint-disable no-useless-escape */
 const mongoose = require('mongoose');
-const validator = require('validator');
+const { isEmail } = require('validator');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -19,18 +20,21 @@ const userSchema = new mongoose.Schema({
   avatar: {
     type: String,
     required: false,
+    default:
+      'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
     validate: {
-      validator: (v) => validator.isUrl(v),
+      validator(v) {
+        return /^((ftp|http|https):\/\/)?(www\.)?([A-Za-zА-Яа-я0-9]{1}[A-Za-zА-Яа-я0-9\-]*\.?)*\.{1}[A-Za-zА-Яа-я0-9-]{2,8}(\/([\w#!:.?+=&%@!\-\/])*)?/.test(v);
+      },
       message: 'Нужно ввести ссылку',
     },
-    default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
   },
   email: {
     type: String,
     required: true,
     unique: true,
     validate: {
-      validator: (v) => validator.isEmail(v),
+      validator: (v) => isEmail(v),
       message: 'Нужно ввести корректную почту',
     },
   },

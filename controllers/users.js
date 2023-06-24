@@ -29,29 +29,31 @@ const getCurrentUser = (req, res, next) => User.findById(req.user._id)
   .catch(next);
 
 const createUser = (req, res, next) => {
-  bcrypt.hash(String(req.body.password), 10).then((hashedPass) => {
-    User.create({
-      ...req.body,
-      password: hashedPass,
-    })
-      .then((newUser) => res.status(201).send(newUser))
-      .catch((err) => {
-        if (err.code === 11000) {
-          next(
-            new AlreadyUseError('Пользователь с такой почтой уже существует'),
-          );
-          return;
-        }
-        if (err.name === 'ValidationError') {
-          next(
-            new IncorrectDataError('Неверные данные при создании пользователя'),
-          );
-          return;
-        }
-        next(err);
+  bcrypt
+    .hash(String(req.body.password), 10)
+    .then((hashedPass) => {
+      User.create({
+        ...req.body,
+        password: hashedPass,
       })
-      .catch(next);
-  });
+        .then((newUser) => res.status(201).send(newUser))
+        .catch((err) => {
+          if (err.code === 11000) {
+            next(
+              new AlreadyUseError('Пользователь с такой почтой уже существует'),
+            );
+          } else if (err.name === 'ValidationError') {
+            next(
+              new IncorrectDataError(
+                'Неверные данные при создании пользователя',
+              ),
+            );
+          } else {
+            next(err);
+          }
+        });
+    })
+    .catch(next);
 };
 
 const login = (req, res, next) => {
@@ -123,9 +125,7 @@ const updateAvatar = (req, res, next) => {
     .catch((err) => {
       if (err.name === 'ValidationError') {
         next(
-          new IncorrectDataError(
-            'Некорректные данные при обновлении аватара',
-          ),
+          new IncorrectDataError('Некорректные данные при обновлении аватара'),
         );
       } else {
         next(err);

@@ -1,6 +1,6 @@
+/* eslint-disable no-useless-escape */
 const { ObjectId } = require('mongoose').Types;
 const mongoose = require('mongoose');
-const validator = require('validator');
 
 const cardSchema = new mongoose.Schema({
   name: {
@@ -13,7 +13,9 @@ const cardSchema = new mongoose.Schema({
     type: String,
     required: true,
     validate: {
-      validator: (v) => validator.isUrl(v),
+      validator(v) {
+        return /^((ftp|http|https):\/\/)?(www\.)?([A-Za-zА-Яа-я0-9]{1}[A-Za-zА-Яа-я0-9\-]*\.?)*\.{1}[A-Za-zА-Яа-я0-9-]{2,8}(\/([\w#!:.?+=&%@!\-\/])*)?/.test(v);
+      },
       message: 'Нужно ввести ссылку',
     },
   },
