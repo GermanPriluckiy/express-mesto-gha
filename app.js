@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
+const { errors } = require('celebrate');
 const router = require('./routes');
 const errorHandler = require('./middlewares/error');
 
@@ -18,6 +19,9 @@ app.use(router);
 app.use((req, res) => {
   res.status(404).send({ message: 'Путь не найден' });
 });
+
+app.use(errors());
+
 app.use(errorHandler);
 app.listen(3000, () => {
   // eslint-disable-next-line no-console
